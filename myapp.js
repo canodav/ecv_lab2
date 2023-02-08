@@ -119,7 +119,7 @@ var MYAPP = {
         const frame = anim[Math.floor(time * 10) % anim.length ];
         var facing = user.facing;
 
-        ctx.drawImage(img, frame * 32, facing * 64, 32, 64, user.position[0] - 16 ,user.position[1] - 20, 32, 64);
+        ctx.drawImage(img, frame * 32, facing * 64, 32, 64, user.position[0] - 16 ,user.position[1] - 20, 32/1.3, 64/1.3);
         ctx.beginPath();
         ctx.rect( user.position[0],  user.position[1], 20, 20);
         ctx.stroke();
@@ -136,11 +136,7 @@ var MYAPP = {
         if (!this.my_user) return;
         var diff = [this.my_user.target[0] - this.my_user.position[0], this.my_user.target[1] - this.my_user.position[1]];
         var delta = diff;
-
-  
-
-        this.my_user.position[0] += delta[0] * dt;
-        this.my_user.position[1] += delta[1] * dt;
+        
 
         // Update facing direction
         var angle = Math.atan2(delta[1], delta[0]);
@@ -154,6 +150,30 @@ var MYAPP = {
             this.my_user.facing = FACING_BACK;
         }
 
+        if(delta[0] > 30){
+            delta[0] = 30;
+        }else if(delta[0] < -30){
+            delta[0] = -30;
+        }
+        else if (delta[0] > -2 && delta[0] < 2){
+            delta[0] = 0;
+        }
+        if(delta[1] > 30){
+            delta[1] = 30;
+        }else if(delta[1] < -30){
+            delta[1] = -30;
+        }
+        else if (delta[1] > -4 && delta[1] < 4){
+            delta[1] = 0;
+        }
+  
+        
+        this.my_user.position[0] += delta[0] * dt;
+        this.my_user.position[1] += delta[1] * dt;
+
+
+
+
 
         // Update animation
         if (delta[0] ==  0 && delta[1] == 0) {
@@ -162,7 +182,6 @@ var MYAPP = {
             this.my_user.animation = 'walking';
         }
 
-        console.log(delta)
     },
     onMouse: function (e) {
         if (e.type == "mousedown") {
@@ -170,6 +189,7 @@ var MYAPP = {
             this.my_user.target = local_pos;
            
         } else if (e.type == "mousemove") {
+
         } else {
             // mouseup
         }
