@@ -18,6 +18,11 @@ html, body{
     padding: 0;
 }
 
-canvas {
+#world-container {
+    flex-basis: 66.66666666%;
 
 }
+
+canvas {
+}
+

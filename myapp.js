@@ -4,10 +4,10 @@ const FACING_LEFT = 2;
 const FACING_BACK = 3;
 
 class User {
-    constructor() {
-        this.name = "unnamed";
+    constructor(id, name) {
+        this.name = name;
         this.position = [0, 0];
-        this.user_id = 1;
+        this.id = id;
         this.room = null;
         this.avatar = 'character_1.png';
         this.facing = FACING_FRONT;
@@ -15,18 +15,30 @@ class User {
         this.target = [0, 0];
     }
 
+    setId(id) {
+        this.id = id;
+    }
+
 }
 
 class Room {
-    constructor(name) {
-        this.id = -1;
+    constructor(id, name, url, people, bg) {
+        this.id = id;
         this.name = name;
-        this.url = null;
-        this.people = [];
+        this.url = url;
+        this.people = people;
+        this.background = bg;
     }
     addUser(user) {
         this.people.push(user);
         user.room = this;
+    }
+    getUser(id) {
+        // find the user with the given id
+        for (let i = 0; i < this.people.length; i++) {
+            if (this.people[i].id == id) return this.people[i];
+        }
+        return null;
     }
 }
 
@@ -35,11 +47,8 @@ var WORLD = {
     rooms: {},
     lastId: 0,
 
-    createRoom: function (name, url) {
-        var room = new Room(name);
-        room.id = this.lastId++;
-        room.url = url;
-
+    createRoom: function (id, name, url, people, bg) {
+        var room = new Room(id, name, url, people, bg);
         this.rooms[name] = room;
         return room;
     },
@@ -49,17 +58,21 @@ var MYAPP = {
     current_room: null,
     my_user: null,
 
-    init: function () {
-        WORLD.createRoom("room1", "https://www.w3schools.com/tags/smiley.gif");
-        this.current_room = WORLD.createRoom(
-            "room2",
-            "https://mir-s3-cdn-cf.behance.net/project_modules/max_1200/01073865290819.5d61d475f0072.jpg"
-        );
-        
-        this.my_user = new User();
+    init: async function () {
+       
+        var rooms = await fetch("http://localhost:9038/rooms")
+        rooms = await rooms.json();
+
+        for (let i = 0; i < rooms.length; i++) {
+            WORLD.createRoom(rooms[i].id, rooms[i].name, rooms[i].url, rooms[i].people, rooms[i].background);
+        }
+        this.current_room = WORLD.rooms["Hall"]
+        this.my_user = new User()
+        console.log(this.my_user)
         this.current_room.addUser(this.my_user);
 
     },
+
     draw: function (canvas, ctx) {
         ctx.imageSmoothingEnabled = false;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -95,8 +108,8 @@ var MYAPP = {
 
     drawRoom: function (canvas, ctx, room) {
         
-        var img = getImage(room.url);
-        ctx.drawImage( getImage(room.url), -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height );
+        var img = getImage(room.background);
+        ctx.drawImage( getImage(room.background), -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height );
         // Draw users
         room.people.forEach((user) => {
             this.drawUser(ctx, user);
@@ -187,6 +200,14 @@ var MYAPP = {
         if (e.type == "mousedown") {
             var local_pos = this.canvasToWorld(mouse_pos);
             this.my_user.target = local_pos;
+            socket.send(JSON.stringify({
+                type: "user_move", 
+                msg: {
+                    id: this.my_user.id,
+                    room: this.current_room.name,
+                    position: local_pos 
+                }
+            }));
            
         } else if (e.type == "mousemove") {
 

@@ -52,8 +52,11 @@ function onMouse(e) {
     var canvasy = mouse_pos[1] = e.clientY - rect.top;
     mouse_buttons = e.buttons;
 
-    MYAPP.onMouse(e)
 
+    // if the mopuse position is within the canvas
+    if (canvasx > 0 && canvasx < canvas.width && canvasy > 0 && canvasy < canvas.height) {
+        MYAPP.onMouse(e);
+    }
 
 }
 
