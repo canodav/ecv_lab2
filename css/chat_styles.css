@@ -78,12 +78,11 @@ body {
 
     display: flex;
 }
-/*
 body[data-logged="true"] #login {
     display: none;
 }
 
-body[data-logged="true"] #chat {
+body[data-logged="true"] #ecv-page {
     display: flex;
 }
 
@@ -91,10 +90,9 @@ body[data-logged="false"] #login {
     display: flex;
 }
 
-body[data-logged="false"] #chat {
+body[data-logged="false"] #ecv-page {
     display: none;
 }
-*/
 
 button {
     cursor: pointer;
@@ -170,7 +168,7 @@ button {
 #chat-sidebar {
     position: absolute;
     inset: 0;
-    width: 80%;
+    width: 33.333%;
 }
 
 #chat-sidebar.open {

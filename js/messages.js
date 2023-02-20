@@ -20,19 +20,20 @@ const messages = {
         chat_box.scrollTop = chat_box.scrollHeight;
     },
     send: function (data) {
-        const content = data.content;
+
+        const content = data.msg.content;
         if (content.length == 0) {
             return;
         }
         const author_username = localStorage.getItem("user");
         data.author = author_username ? author_username : data.author;
         this.render({
-            author: data.author,
-            content:data.content,
+            author: data.from_id,
+            content: content,
             origin: "local"
         })
- 
-        server.sendMessage(data);
+
+        socket.send(JSON.stringify(data));
         this.saveMessageInHistory(data);
     },
     receive: function (data) {
@@ -42,14 +43,15 @@ const messages = {
     saveMessageInHistory: function (msg) {
         message_history.push({
             type: msg.type,
-            content: msg.content,
+            content: msg.msg.content,
             author: msg.author
         });
+        console.log(message_history)
         this.saveHistory();
     },
     saveHistory: function () {
         const key = "chat_history_" + localStorage.getItem("user") + "_" + localStorage.getItem("room");
-        server.storeData(key, JSON.stringify(message_history));
+        socket.storeData(key, JSON.stringify(message_history));
     },
     loadHistory: async function () {
         const key = "chat_history_" + localStorage.getItem("user") + "_" + localStorage.getItem("room");
@@ -70,7 +72,11 @@ const chat_input = document.querySelector('#chat-input');
 const input = chat_input.querySelector('input');
 console.log(input);
 chat_input.addEventListener('submit', function (e) {
-    messages.send({type: "text", content: input.value, author: current_id});
+
+    messages.send({from_id: MYAPP.my_user.id, type: "user_message", msg:{
+        content: input.value
+    }});
+
     input.value = "";
 
     e.preventDefault();

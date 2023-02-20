@@ -17,6 +17,11 @@ html, body{
     margin: 0;
     padding: 0;
 }
+#ecv-page{
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+}
 
 #world-container {
     flex-basis: 66.66666666%;

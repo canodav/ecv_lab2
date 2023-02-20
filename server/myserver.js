@@ -1,5 +1,11 @@
 var http = require('http');
 var url = require('url');
+
+var JsonDB = require('node-json-db');
+var db = new JsonDB("myDataBase", true, false);
+
+var connections = {};
+
 const User = require('./users.js');
 const Room = require('./rooms.js');
 const Message = require('./messages.js');
@@ -43,63 +49,121 @@ const wsServer = new WebSocketServer({ // create the server
 wsServer.on('request', function(request) {
 
     var connection = request.accept(null, request.origin);
-    userId++;
-    const user = new User(userId, "user" + userId);
-    connection.sendUTF(JSON.stringify(user.toJSON())); // send the message to the client
-
 
     // Connection is the client
     connection.on('message', function(message) {
         if (message.type === 'utf8') {
             // Get the message type
             const msg = JSON.parse(message.utf8Data);
+            const from_id = msg.from_id;
             const type = msg.type;
             const data = msg.msg;
-
+            // Get unique id from the connection
             // if type is connection
             if (type === "connection") {
+
+                userId++;
+                const user = new User(userId, "user" + userId);
+                connection.sendUTF(JSON.stringify(user.toJSON())); // send the message to the client
+
                 // Send id to the client
                 const id_message = new Message("id", user.toJSON());
                 connection.sendUTF(id_message.toJSONString());
 
+
                 // send msg to all the users of wsServer
                 const message = new Message("new_user_connected", user.toJSON());
-                wsServer.connections.forEach(function (connection) {
-                    connection.sendUTF(message.toJSONString());
-                });
-                
+               
+                for (var conn in connections) {
+                    connections[conn].sendUTF(message.toJSONString());
+                }
+
+                connections[userId] = connection;
+
+                room1.addUser(user);
             }   
 
             // if type is move
             if (type === "user_move") {
-                user.position = data.position;
+                // get the user from the list of users with the id of from_id
+                // TODO search in a specific room
+                var user = null;
+                
+                const room = data.room;
+                // Get the room from the list of rooms with name room
+                rooms.forEach(function (r) {
+                    if(r.name === room){
+                        user = r.getUser(from_id);
+                    }
+                });
+
+                if(user === null){
+                    return;
+                }
+                user.target = data.target;
 
                 // send msg to all the users of wsServer
-                const message = new Message("user_move", user.toJSON());
+                const message = new Message("user_move", user.toJSON(), from_id);
+                
+                const connections_clone = Object.assign({}, connections);
+                delete connections_clone[from_id];
+
+                for (var conn in connections_clone) {
+                    connections_clone[conn].sendUTF(message.toJSONString());
+                }
+            }
+
+            if (type === "user_disconnected"){
+                // TODO remove user from the list of users
+                var user = null;
+                const room = data.room;
+                // Get the room from the list of rooms with name room
+                rooms.forEach(function (r) {
+                    if(r.name === room){
+                        user = r.getUser(from_id);
+                        r.removeUser(user);
+                    }
+                });
+
+                if(user === null){
+                    return;
+                }
+                const message = new Message("user_disconnected", user.toJSONString(), from_id);
+            
                 wsServer.connections.forEach(function (connection) {
                     connection.sendUTF(message.toJSONString());
                 });
+                delete connections[from_id];
+                
             }
+
+            if(type === "user_message"){
+                const message = new Message("user_message", data, from_id);
+
+                const connections_clone = Object.assign({}, connections);
+                delete connections_clone[from_id];
+
+                for (var conn in connections_clone) {
+                    connections_clone[conn].sendUTF(message.toJSONString());
+                }
+            }
+
+
+            if(type == "store_data"){
+                const store_data = JSON.parse(data.data);
+                db.push("db.json", store_data);
+                //console.log(store_data);
+               // db.save(data.key, JSON.stringify(store_data));
+            }
+
+
         }
     });
 
-    connection.on('close', function() {
-	  //connection is this
-	  console.log("USER IS GONE");// close user connection
-      // Remove user from the room
-        // Remove user from the list of users
-        // Send msg to all the users of wsServer
-        /*
-        rooms.forEach(function (room) {
-            room.removeUser(user);
-        });
-
-        const message = new Message("user_disconnected", user.toJSON());
-        wsServer.connections.forEach(function (connection) {
-            connection.sendUTF(message.toJSONString());
-        }
-        */
-
+    connection.on('close', function(e) {
+	    //connection is this
+	    console.log("USER IS GONE");// close user connection
+        
     });
 });
 

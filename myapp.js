@@ -18,7 +18,9 @@ class User {
     setId(id) {
         this.id = id;
     }
-
+    setName(name) {
+        this.name = name;
+    }
 }
 
 class Room {
@@ -39,6 +41,15 @@ class Room {
             if (this.people[i].id == id) return this.people[i];
         }
         return null;
+    }
+    removeUser(user) {
+        // find the user with the given id
+        for (let i = 0; i < this.people.length; i++) {
+            if (this.people[i].id == user.id) {
+                this.people.splice(i, 1);
+                return;
+            }
+        }
     }
 }
 
@@ -63,14 +74,19 @@ var MYAPP = {
         var rooms = await fetch("http://localhost:9038/rooms")
         rooms = await rooms.json();
 
+
         for (let i = 0; i < rooms.length; i++) {
             WORLD.createRoom(rooms[i].id, rooms[i].name, rooms[i].url, rooms[i].people, rooms[i].background);
         }
+
         this.current_room = WORLD.rooms["Hall"]
-        this.my_user = new User()
-        console.log(this.my_user)
+
+        this.my_user = new User(-1, "unnamed")
         this.current_room.addUser(this.my_user);
 
+        this.current_room.people.forEach(function (user) {
+            chatlist.addUser(user.name);
+        })
     },
 
     draw: function (canvas, ctx) {
@@ -146,66 +162,72 @@ var MYAPP = {
 
     },
     update: function (dt) {
-        if (!this.my_user) return;
-        var diff = [this.my_user.target[0] - this.my_user.position[0], this.my_user.target[1] - this.my_user.position[1]];
-        var delta = diff;
+        // Update users
+        if(this.current_room){        
+            for (let i = 0; i < this.current_room.people.length; i++) {
+                    
+            
+                if (!this.current_room.people[i]) return;
+                var diff = [this.current_room.people[i].target[0] - this.current_room.people[i].position[0], this.current_room.people[i].target[1] - this.current_room.people[i].position[1]];
+                var delta = diff;
+                
+
+                // Update facing direction
+                var angle = Math.atan2(delta[1], delta[0]);
+                if (angle > - Math.PI / 4 && angle < Math.PI / 4) {
+                    this.current_room.people[i].facing = FACING_RIGHT;
+                } else if (angle > Math.PI / 4 && angle < (3 * Math.PI) / 4) {
+                    this.current_room.people[i].facing = FACING_FRONT;
+                } else if (angle > (3 * Math.PI) / 4 || angle < -(3 * Math.PI) / 4) {
+                    this.current_room.people[i].facing = FACING_LEFT;
+                } else {
+                    this.current_room.people[i].facing = FACING_BACK;
+                }
+
+                if(delta[0] > 30){
+                    delta[0] = 30;
+                }else if(delta[0] < -30){
+                    delta[0] = -30;
+                }
+                else if (delta[0] > -2 && delta[0] < 2){
+                    delta[0] = 0;
+                }
+                if(delta[1] > 30){
+                    delta[1] = 30;
+                }else if(delta[1] < -30){
+                    delta[1] = -30;
+                }
+                else if (delta[1] > -4 && delta[1] < 4){
+                    delta[1] = 0;
+                }
         
+                
+                this.current_room.people[i].position[0] += delta[0] * dt;
+                this.current_room.people[i].position[1] += delta[1] * dt;
 
-        // Update facing direction
-        var angle = Math.atan2(delta[1], delta[0]);
-        if (angle > - Math.PI / 4 && angle < Math.PI / 4) {
-            this.my_user.facing = FACING_RIGHT;
-        } else if (angle > Math.PI / 4 && angle < (3 * Math.PI) / 4) {
-            this.my_user.facing = FACING_FRONT;
-        } else if (angle > (3 * Math.PI) / 4 || angle < -(3 * Math.PI) / 4) {
-            this.my_user.facing = FACING_LEFT;
-        } else {
-            this.my_user.facing = FACING_BACK;
+
+                // Update animation
+                if (delta[0] ==  0 && delta[1] == 0) {
+                    this.current_room.people[i].animation = 'idle';
+                } else {
+                    this.current_room.people[i].animation = 'walking';
+                }
+            }
         }
-
-        if(delta[0] > 30){
-            delta[0] = 30;
-        }else if(delta[0] < -30){
-            delta[0] = -30;
-        }
-        else if (delta[0] > -2 && delta[0] < 2){
-            delta[0] = 0;
-        }
-        if(delta[1] > 30){
-            delta[1] = 30;
-        }else if(delta[1] < -30){
-            delta[1] = -30;
-        }
-        else if (delta[1] > -4 && delta[1] < 4){
-            delta[1] = 0;
-        }
-  
-        
-        this.my_user.position[0] += delta[0] * dt;
-        this.my_user.position[1] += delta[1] * dt;
-
-
-
-
-
-        // Update animation
-        if (delta[0] ==  0 && delta[1] == 0) {
-            this.my_user.animation = 'idle';
-        } else {
-            this.my_user.animation = 'walking';
-        }
-
     },
+
+
     onMouse: function (e) {
         if (e.type == "mousedown") {
             var local_pos = this.canvasToWorld(mouse_pos);
             this.my_user.target = local_pos;
             socket.send(JSON.stringify({
+                from_id: this.my_user.id,
                 type: "user_move", 
                 msg: {
                     id: this.my_user.id,
                     room: this.current_room.name,
-                    position: local_pos 
+                    target: local_pos 
                 }
             }));
            

@@ -1,10 +1,12 @@
 class Message {
-    constructor(type, data) {
+    constructor( type, data, from_id) {
+        this.from_id = from_id;
         this.type = type;
         this.msg = data;
     }
     toJSON() {
         return {
+            from_id: this.from_id,
             type: this.type,
             msg: this.msg
         };

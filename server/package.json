@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "csv-parser": "^3.0.0",
+    "node-json-db": "^0.10.0",
     "websocket": "^1.0.34"
   }
 }

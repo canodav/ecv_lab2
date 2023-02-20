@@ -11,8 +11,17 @@ class Room {
         user.room = this;
     }
     removeUser(user) {
+        if(user == null) return;
+        if (user.room != this) return;
         this.people = this.people.filter((u) => u.id != user.id);
-    }       
+    }    
+    getUser(id) {
+        // find the user with the given id
+        for (let i = 0; i < this.people.length; i++) {
+            if (this.people[i].id == id) return this.people[i];
+        }
+        return null;
+    }
 }
 
 
