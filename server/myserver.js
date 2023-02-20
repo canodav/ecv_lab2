@@ -1,9 +1,6 @@
 var http = require('http');
 var url = require('url');
 
-var JsonDB = require('node-json-db');
-var db = new JsonDB("myDataBase", true, false);
-
 var connections = {};
 
 const User = require('./users.js');
@@ -151,7 +148,6 @@ wsServer.on('request', function(request) {
 
             if(type == "store_data"){
                 const store_data = JSON.parse(data.data);
-                db.push("db.json", store_data);
                 //console.log(store_data);
                // db.save(data.key, JSON.stringify(store_data));
             }
